@@ -13,3 +13,6 @@
 | Realtime subscriptions/events | Next | appwrite/realtime | `services/realtime-service`, `apps/api` | Implemented | `tests/api.test.js` |
 | Teams and advanced role checks | Next | appwrite/teams | `services/team-service`, `apps/api` | Implemented | `tests/api.test.js` |
 | Webhooks + audit logs | Next | appwrite/webhooks | `services/webhook-service`, `services/audit-service`, `apps/api` | Implemented | `tests/api.test.js` |
+| Messaging channels and message fan-out | Later | appwrite/messaging | `services/messaging-service`, `apps/api` | Implemented | `tests/api.test.js` |
+| Admin/ops control surface and status | Later | appwrite/console-admin | `services/admin-service`, `apps/api` | Implemented | `tests/api.test.js` |
+| Extension registration/invocation layer | Later | appwrite/extensions | `services/extensions-service`, `apps/api` | Implemented | `tests/api.test.js` |

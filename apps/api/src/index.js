@@ -3,8 +3,11 @@ import { loadEnv } from '../../../packages/config/src/env.js';
 import { asAppError, AppError } from '../../../packages/core/src/errors.js';
 import { AuthService } from '../../../services/auth-service/src/authService.js';
 import { AuditService } from '../../../services/audit-service/src/auditService.js';
+import { AdminService } from '../../../services/admin-service/src/adminService.js';
 import { DatabaseService } from '../../../services/database-service/src/databaseService.js';
+import { ExtensionsService } from '../../../services/extensions-service/src/extensionsService.js';
 import { FunctionsService } from '../../../services/functions-service/src/functionsService.js';
+import { MessagingService } from '../../../services/messaging-service/src/messagingService.js';
 import { RealtimeService } from '../../../services/realtime-service/src/realtimeService.js';
 import { StorageService } from '../../../services/storage-service/src/storageService.js';
 import { TeamService } from '../../../services/team-service/src/teamService.js';
@@ -14,9 +17,12 @@ import { WebhookService } from '../../../services/webhook-service/src/webhookSer
 const userService = new UserService();
 const teamService = new TeamService();
 const authService = new AuthService({ userService, jwtSecret: process.env.JWT_SECRET || 'dev-secret' });
+const adminService = new AdminService();
 const databaseService = new DatabaseService();
 const storageService = new StorageService();
 const functionsService = new FunctionsService();
+const messagingService = new MessagingService();
+const extensionsService = new ExtensionsService();
 const realtimeService = new RealtimeService();
 const webhookService = new WebhookService();
 const auditService = new AuditService();
@@ -246,6 +252,77 @@ export function createApiServer() {
 
       if (pathname === '/audit/logs' && req.method === 'GET') {
         sendJson(res, 200, auditService.list());
+        return;
+      }
+
+      if (pathname === '/admin/maintenance' && req.method === 'POST') {
+        const payload = await readJsonBody(req);
+        const maintenance = adminService.setMaintenance(payload);
+        withAudit('admin.maintenance.update', maintenance);
+        sendJson(res, 200, maintenance);
+        return;
+      }
+
+      if (pathname === '/admin/status' && req.method === 'GET') {
+        sendJson(res, 200, {
+          maintenance: adminService.getMaintenance(),
+          metrics: {
+            requests: requestCount,
+            errors: errorCount,
+            auditEvents: auditService.list().length
+          }
+        });
+        return;
+      }
+
+      if (pathname === '/messaging/channels' && req.method === 'POST') {
+        const payload = await readJsonBody(req);
+        const channel = messagingService.createChannel(payload);
+        withAudit('messaging.channel.create', { channelId: channel.id, ownerId: channel.ownerId });
+        sendJson(res, 201, channel);
+        return;
+      }
+
+      if (pathParts[0] === 'messaging' && pathParts[1] === 'channels' && pathParts[3] === 'subscribers' && req.method === 'POST') {
+        const payload = await readJsonBody(req);
+        const channel = messagingService.subscribe(pathParts[2], payload.subscriberId);
+        withAudit('messaging.channel.subscribe', { channelId: pathParts[2], subscriberId: payload.subscriberId });
+        sendJson(res, 200, channel);
+        return;
+      }
+
+      if (pathParts[0] === 'messaging' && pathParts[1] === 'channels' && pathParts[3] === 'messages' && req.method === 'POST') {
+        const payload = await readJsonBody(req);
+        const message = messagingService.publish(pathParts[2], payload);
+        realtimeService.publish(`messaging.${pathParts[2]}`, 'messaging.message', message);
+        withAudit('messaging.message.publish', { channelId: pathParts[2], messageId: message.id });
+        sendJson(res, 201, message);
+        return;
+      }
+
+      if (pathParts[0] === 'messaging' && pathParts[1] === 'channels' && pathParts[3] === 'messages' && req.method === 'GET') {
+        sendJson(res, 200, messagingService.listMessages(pathParts[2]));
+        return;
+      }
+
+      if (pathname === '/extensions/register' && req.method === 'POST') {
+        const payload = await readJsonBody(req);
+        const extension = extensionsService.register(payload);
+        withAudit('extensions.register', { extensionId: extension.id });
+        sendJson(res, 201, extension);
+        return;
+      }
+
+      if (pathname === '/extensions/invoke' && req.method === 'POST') {
+        const payload = await readJsonBody(req);
+        const invocation = extensionsService.invoke(payload.extensionId, payload.payload);
+        withAudit('extensions.invoke', { extensionId: payload.extensionId, invocationId: invocation.id });
+        sendJson(res, 200, invocation);
+        return;
+      }
+
+      if (pathname === '/extensions' && req.method === 'GET') {
+        sendJson(res, 200, extensionsService.list());
         return;
       }
 

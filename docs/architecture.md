@@ -22,9 +22,12 @@
 - `services/storage-service`: file object storage and access checks.
 - `services/functions-service`: function registration and execution.
 - `services/realtime-service`: channel subscriptions and event streams.
+- `services/messaging-service`: messaging channels, subscribers, and message delivery records.
 - `services/team-service`: team membership and role hierarchy checks.
 - `services/webhook-service`: webhook registration and delivery queueing.
 - `services/audit-service`: audit trail of user/system actions.
+- `services/admin-service`: maintenance mode and operational status.
+- `services/extensions-service`: extension registration and invocation contract.
 - `packages/config`: environment loading/validation.
 - `packages/core`: shared schema-free models and utility logic.
 - `packages/compat`: temporary adapters for migration compatibility.

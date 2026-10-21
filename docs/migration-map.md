@@ -15,3 +15,6 @@
 | Realtime fan-out | Realtime service | `services/realtime-service/src/realtimeService.js` | Implemented (Phase 2) | Channel subscriptions and event logs |
 | Outbound event integration | Webhook service | `services/webhook-service/src/webhookService.js` | Implemented (Phase 2) | Registration and delivery queue simulation |
 | Auditing and traceability | Audit service | `services/audit-service/src/auditService.js` | Implemented (Phase 2) | Structured action log for API flows |
+| Messaging channels/events | Messaging service | `services/messaging-service/src/messagingService.js` | Implemented (Phase 3) | Channel management, subscription and message publish/list |
+| Admin operations controls | Admin service | `services/admin-service/src/adminService.js` | Implemented (Phase 3) | Maintenance mode + system status contract |
+| Extension integration facade | Extensions service | `services/extensions-service/src/extensionsService.js` | Implemented (Phase 3) | Register and invoke extension actions |

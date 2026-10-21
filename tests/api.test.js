@@ -207,3 +207,75 @@ test('invalid json body is handled with structured error response', async () => 
 
   await ctx.close();
 });
+
+test('phase 3 endpoints support admin ops, messaging channels, and extension invocations', async () => {
+  const ctx = await createServerContext();
+
+  const maintenanceRes = await request(ctx.baseUrl, '/admin/maintenance', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ enabled: true, reason: 'deploy-window' })
+  });
+  assert.equal(maintenanceRes.status, 200);
+
+  const statusRes = await request(ctx.baseUrl, '/admin/status');
+  assert.equal(statusRes.status, 200);
+  const statusBody = await statusRes.json();
+  assert.equal(statusBody.maintenance.enabled, true);
+
+  const channelRes = await request(ctx.baseUrl, '/messaging/channels', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id: 'ch-1', name: 'Ops', ownerId: 'owner-1' })
+  });
+  assert.equal(channelRes.status, 201);
+
+  const subscribeRes = await request(ctx.baseUrl, '/messaging/channels/ch-1/subscribers', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ subscriberId: 'member-1' })
+  });
+  assert.equal(subscribeRes.status, 200);
+
+  const sendRes = await request(ctx.baseUrl, '/messaging/channels/ch-1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ senderId: 'member-1', content: 'hello channel' })
+  });
+  assert.equal(sendRes.status, 201);
+
+  const listMessagesRes = await request(ctx.baseUrl, '/messaging/channels/ch-1/messages');
+  assert.equal(listMessagesRes.status, 200);
+  const messages = await listMessagesRes.json();
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].content, 'hello channel');
+
+  const registerExtRes = await request(ctx.baseUrl, '/extensions/register', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id: 'ext-1', name: 'Annotator', action: 'annotate' })
+  });
+  assert.equal(registerExtRes.status, 201);
+
+  const invokeExtRes = await request(ctx.baseUrl, '/extensions/invoke', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ extensionId: 'ext-1', payload: { message: 'hello' } })
+  });
+  assert.equal(invokeExtRes.status, 200);
+  const invocation = await invokeExtRes.json();
+  assert.equal(invocation.output.extension, 'Annotator');
+
+  const extensionsRes = await request(ctx.baseUrl, '/extensions');
+  assert.equal(extensionsRes.status, 200);
+  const extensions = await extensionsRes.json();
+  assert.equal(extensions.length, 1);
+
+  const channelEventsRes = await request(ctx.baseUrl, '/realtime/channels/messaging.ch-1');
+  assert.equal(channelEventsRes.status, 200);
+  const channelEvents = await channelEventsRes.json();
+  assert.equal(channelEvents.length, 1);
+  assert.equal(channelEvents[0].type, 'messaging.message');
+
+  await ctx.close();
+});
