@@ -18,6 +18,8 @@ Migration is complete when all are true:
 - Priority `must-have` features are implemented and tested.
 - Compatibility adapters are removed or explicitly retained with justification.
 - CI pipeline passes for lint, build, and tests.
+- Priority `next` features targeted for current milestone are implemented and tested when included in delivery scope.
+- Priority `later` features targeted for completion are implemented and tested when marked complete.
 
 ## Feature implementation complete acceptance
 
