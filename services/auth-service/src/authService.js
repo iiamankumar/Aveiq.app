@@ -1,10 +1,22 @@
-import { createHash } from 'node:crypto';
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { AppError } from '../../../packages/core/src/errors.js';
 import { signJwt, verifyJwt } from '../../../packages/core/src/jwt.js';
 import { nowIso } from '../../../packages/core/src/utils.js';
 
 function hashPassword(password) {
-  return createHash('sha256').update(String(password || '')).digest('hex');
+  const salt = randomBytes(16);
+  const derived = scryptSync(String(password || ''), salt, 64);
+  return `${salt.toString('hex')}:${derived.toString('hex')}`;
+}
+
+function verifyPassword(password, encoded) {
+  const [saltHex, digestHex] = String(encoded || '').split(':');
+  if (!saltHex || !digestHex) return false;
+  const salt = Buffer.from(saltHex, 'hex');
+  const expected = Buffer.from(digestHex, 'hex');
+  const actual = scryptSync(String(password || ''), salt, expected.length);
+  if (expected.length !== actual.length) return false;
+  return timingSafeEqual(expected, actual);
 }
 
 export class AuthService {
@@ -44,7 +56,7 @@ export class AuthService {
     const email = String(input?.email || '').toLowerCase().trim();
     const password = String(input?.password || '');
     const record = this.#credentialsByEmail.get(email);
-    if (!record || record.passwordHash !== hashPassword(password)) {
+    if (!record || !verifyPassword(password, record.passwordHash)) {
       throw new AppError('Invalid email or password', 401, 'AUTH_LOGIN_FAILED');
     }
 
