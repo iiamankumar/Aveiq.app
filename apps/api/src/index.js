@@ -45,7 +45,12 @@ async function readJsonBody(req) {
 function tokenFromRequest(req) {
   const header = req.headers.authorization || '';
   if (!header.startsWith('Bearer ')) {
-    throw new AppError('Missing bearer token', 401, 'AUTH_TOKEN_MISSING');
+    const url = new URL(req.url || '/', 'http://localhost');
+    const token = url.searchParams.get('token');
+    if (!token) {
+      throw new AppError('Missing bearer token', 401, 'AUTH_TOKEN_MISSING');
+    }
+    return token;
   }
   return header.slice('Bearer '.length).trim();
 }

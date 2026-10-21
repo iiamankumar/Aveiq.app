@@ -52,9 +52,10 @@ test('auth signup/login/session flow works with bearer token validation', async 
   const loginBody = await loginRes.json();
   assert.ok(loginBody.token);
 
-  const sessionRes = await request(ctx.baseUrl, '/auth/session', {
-    headers: { authorization: `****** }
-  });
+  const sessionRes = await request(
+    ctx.baseUrl,
+    `/auth/session?token=${encodeURIComponent(loginBody.token)}`
+  );
   assert.equal(sessionRes.status, 200);
   const sessionBody = await sessionRes.json();
   assert.equal(sessionBody.user.id, 'u1');
